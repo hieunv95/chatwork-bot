@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "0003ee5c878fa3a6d4485f027d0ab5d7",
+    "content-hash": "424ede7d55a66984ada8beedd4d5147d",
     "packages": [
         {
             "name": "doctrine/inflector",
@@ -2174,6 +2174,39 @@
                 "environment"
             ],
             "time": "2016-09-01T10:05:43+00:00"
+        },
+        {
+            "name": "wataridori/chatwork-sdk",
+            "version": "0.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/wataridori/chatwork-sdk.git",
+                "reference": "a9aafabe7c1d3752db449c20b5764db38b432139"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/wataridori/chatwork-sdk/zipball/a9aafabe7c1d3752db449c20b5764db38b432139",
+                "reference": "a9aafabe7c1d3752db449c20b5764db38b432139",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "wataridori\\ChatworkSDK\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0"
+            ],
+            "authors": [
+                {
+                    "name": "Tran Duc Thang",
+                    "email": "thangtd90@gmail.com"
+                }
+            ],
+            "description": "Just a non-official SDK for Chatwork",
+            "time": "2017-02-02T09:43:03+00:00"
         }
     ],
     "packages-dev": [
