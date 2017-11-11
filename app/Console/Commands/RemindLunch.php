@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use wataridori\ChatworkSDK\ChatworkRoom;
 use wataridori\ChatworkSDK\ChatworkSDK;
 use wataridori\ChatworkSDK\ChatworkApi;
+use Carbon\Carbon;
 
 class RemindLunch extends Command
 {
@@ -39,7 +40,7 @@ class RemindLunch extends Command
 
     public function handle()
     {
-        $message = "It's time to lunch. Get your ass off the chair!";
+        $message = "It's time to lunch. Get your ass off the chair! " . Carbon::now('Asia/Ho_Chi_Minh')->format('Y-m-d H:i:s');
         $members = $this->chatworkRoom->getMembers();
         $me = $this->chatworkApi->me();
         $otherMembers = collect($members)->filter(function($member) use ($me) {
