@@ -5,10 +5,10 @@ namespace app\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
-use wataridori\ChatworkSDK\ChatworkRoom;
 use wataridori\ChatworkSDK\ChatworkSDK;
-use wataridori\ChatworkSDK\ChatworkApi;
-use Carbon\Carbon;
+use App\Api\ChatworkExtend\ChatworkApi;
+use App\Api\ChatworkExtend\ChatworkRoom;
+use App\Models\Reminder;
 
 class RemindLunch extends Command
 {
@@ -26,27 +26,26 @@ class RemindLunch extends Command
      */
     protected $description = 'Remind lunch';
 
-    protected $chatworkRoom;
     protected $chatworkApi;
-    protected $roomId = 89867570;
 
     public function __construct()
     {
         parent::__construct();
         ChatworkSDK::setApiKey(env("CHATWORK_API_KEY"));
-        $this->chatworkRoom = new ChatworkRoom($this->roomId);
+        ChatworkSDK::setSslVerificationMode(false);
         $this->chatworkApi = new ChatworkApi();
     }
 
     public function handle()
     {
-        $message = "It's time to lunch. Get your ass off the chair! " . Carbon::now('Asia/Ho_Chi_Minh')->format('Y-m-d H:i:s');
-        $members = $this->chatworkRoom->getMembers();
+        $rooms = collect($this->chatworkApi->getRooms());
         $me = $this->chatworkApi->me();
-        $otherMembers = collect($members)->filter(function($member) use ($me) {
-            return $member->account_id != $me['account_id'];
-        });
-        $this->chatworkRoom->sendMessageToList($otherMembers, $message, false, false);
-    }
 
+        foreach ($rooms as $room) {
+            if ($room['type'] == ChatworkRoom::DIRECT_ROOM_TYPE) {
+                $chatworkRoom = new ChatworkRoom($room['room_id']);
+                $chatworkRoom->deleteLatestMessage()->sendMessageToOthers($me);
+            }
+        }
+    }
 }
