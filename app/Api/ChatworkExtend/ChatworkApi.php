@@ -21,11 +21,14 @@ class ChatworkApi extends ChatworkApiBase
      * @param int message_id
      *
      * @see http://developer.chatwork.com/ja/endpoint_rooms.html#DELETE-rooms-room_id-messages-message_id
+     *
+     * @return array
      */
-    public function deleteMessage($room_id, $message_id)
+    public function deleteMessage($roomId, $messageId)
     {
         return $this->api(
-            sprintf('rooms/%d/messages/%s', $room_id, $message_id),
-            ChatworkRequest::REQUEST_METHOD_DELETE);
+            sprintf('rooms/%d/messages/%s', $roomId, $messageId),
+            ChatworkRequest::REQUEST_METHOD_DELETE
+        );
     }
 }

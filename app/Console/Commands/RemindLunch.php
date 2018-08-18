@@ -3,15 +3,15 @@
 namespace app\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Http\Request;
 use wataridori\ChatworkSDK\ChatworkSDK;
 use App\Api\ChatworkExtend\ChatworkApi;
 use App\Api\ChatworkExtend\ChatworkRoom;
-use App\Models\Reminder;
 
 class RemindLunch extends Command
 {
+    const TO_ALL_TYPE = 'toall';
+    const TO_DIRECT_TYPE = 'direct';
+
     /**
      * The name and signature of the console command.
      *
@@ -31,12 +31,34 @@ class RemindLunch extends Command
     public function __construct()
     {
         parent::__construct();
-        ChatworkSDK::setApiKey(env("CHATWORK_API_KEY"));
+        ChatworkSDK::setApiKey(env('CHATWORK_API_KEY'));
         ChatworkSDK::setSslVerificationMode(false);
         $this->chatworkApi = new ChatworkApi();
     }
 
     public function handle()
+    {
+        switch (env('MESSAGE_TYPE')) {
+            case self::TO_ALL_TYPE:
+                $this->sendMessageToAllByRoomID(env('ROOM_ID'));
+                break;
+            case self::TO_DIRECT_TYPE:
+                $this->sendDirectMessages();
+                break;
+            default:
+                return;
+        }
+    }
+
+    private function sendMessageToAllByRoomID(string $roomId = null)
+    {
+        if (isset($roomId)) {
+            $chatworkRoom = new ChatworkRoom($roomId);
+            $chatworkRoom->sendMessageToAllWithShortcut();
+        }
+    }
+
+    private function sendDirectMessages()
     {
         $rooms = collect($this->chatworkApi->getRooms());
         $me = $this->chatworkApi->me();
