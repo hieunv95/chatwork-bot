@@ -29,9 +29,11 @@ class SchedulerDaemon extends Command
      */
     public function handle()
     {
-        $endTime = Carbon::createFromFormat('H:i', env('REMIND_TIME'), 'Asia/Ho_Chi_Minh')->addMinute(5);
-        while ($endTime->isFuture()) {
-            $this->line('<info>[' . Carbon::now()->format('Y-m-d H:i:s') . ']</info> Calling scheduler');
+        $tz = env('TZ') ?: 'Asia/Ho_Chi_Minh';
+        $endRemindLunchTime = Carbon::createFromFormat('H:i', env('REMIND_LUNCH_TIME'), $tz)
+            ->addMinute(5);
+        while ($endRemindLunchTime->isFuture()) {
+            $this->line('<info>[' . Carbon::now($tz)->format('Y-m-d H:i:s') . ']</info> Calling scheduler');
 
             $this->call('schedule:run');
 

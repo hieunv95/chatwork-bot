@@ -2,10 +2,13 @@
 
 namespace app\Console\Commands;
 
+use App\Inspiring;
+use App\Models\Message;
 use Illuminate\Console\Command;
 use wataridori\ChatworkSDK\ChatworkSDK;
 use App\Api\ChatworkExtend\ChatworkApi;
 use App\Api\ChatworkExtend\ChatworkRoom;
+use wataridori\ChatworkSDK\ChatworkUser;
 
 class RemindLunch extends Command
 {
@@ -36,9 +39,12 @@ class RemindLunch extends Command
         $this->chatworkApi = new ChatworkApi();
     }
 
+    /**
+     * @throws \wataridori\ChatworkSDK\Exception\ChatworkSDKException
+     */
     public function handle()
     {
-        switch (env('MESSAGE_TYPE')) {
+        switch (env('MESSAGE_LUNCH_TYPE')) {
             case self::TO_ALL_TYPE:
                 $this->sendMessageToAllByRoomID(env('ROOM_ID'));
                 break;
@@ -54,10 +60,14 @@ class RemindLunch extends Command
     {
         if (isset($roomId)) {
             $chatworkRoom = new ChatworkRoom($roomId);
-            $chatworkRoom->sendMessageToAllWithShortcut();
+            $message = '[toall]' . PHP_EOL . Inspiring::remindLunch($chatworkRoom->getMembersExceptMe());
+            $chatworkRoom->sendMessageToAllWithShortcut(Message::REMIND_LUNCH_TYPE, $message);
         }
     }
 
+    /**
+     * @throws \wataridori\ChatworkSDK\Exception\ChatworkSDKException
+     */
     private function sendDirectMessages()
     {
         $rooms = collect($this->chatworkApi->getRooms());
@@ -66,6 +76,7 @@ class RemindLunch extends Command
         foreach ($rooms as $room) {
             if ($room['type'] == ChatworkRoom::DIRECT_ROOM_TYPE) {
                 $chatworkRoom = new ChatworkRoom($room['room_id']);
+                /** @var ChatworkUser $me */
                 $chatworkRoom->deleteLatestMessage()->sendMessageToOthers($me);
             }
         }

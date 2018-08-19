@@ -3,9 +3,7 @@
 namespace App\Api\ChatworkExtend;
 
 use App\Inspiring;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Models\Message;
 use wataridori\ChatworkSDK\ChatworkRoom as ChatworkRoomBase;
 
 class ChatworkRoom extends ChatworkRoomBase
@@ -14,12 +12,18 @@ class ChatworkRoom extends ChatworkRoomBase
     const DIRECT_ROOM_TYPE = 'direct';
 
     /**
+     * @var Message
+     */
+    private $messageModel;
+
+    /**
      * Constructor.
      */
     public function __construct($roomId)
     {
         parent::__construct($roomId);
         $this->chatworkApi = new ChatworkApi();
+        $this->messageModel = new Message();
     }
 
     /**
@@ -71,32 +75,34 @@ class ChatworkRoom extends ChatworkRoomBase
         return $this;
     }
 
-    public function sendMessageToAllWithShortcut()
+    public function sendMessageToAllWithShortcut(int $messageType = null, string $messageContent = '')
     {
-        try {
-            DB::beginTransaction();
-            $oldMessage = DB::table('messages')->first();
-            if ($oldMessage && isset($oldMessage->id)) {
-                $this->chatworkApi->deleteMessage($this->room_id, $oldMessage->id);
-                DB::table('messages')->delete();
-            }
-
-            $message = '[toall]' . PHP_EOL . Inspiring::remindLunch();
-            $currentMessage = $this->sendMessage($message);
-            if ($currentMessage && isset($currentMessage['message_id'])) {
-                DB::table('messages')->insert([
-                    [
-                        'id' => $currentMessage['message_id'],
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
-                    ],
-                ]);
-            }
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::debug($e->getMessage());
+        $messageQuery = $this->messageModel->where('type', $messageType);
+        $oldMessage = $messageQuery->first();
+        if ($oldMessage && isset($oldMessage->id)) {
+            $this->chatworkApi->deleteMessage($this->room_id, $oldMessage->id);
+            $messageQuery->delete();
         }
+
+        $currentMessage = $this->sendMessage($messageContent);
+        if ($currentMessage && isset($currentMessage['message_id'])) {
+            $this->messageModel->create([
+                'id' => $currentMessage['message_id'],
+                'type' => $messageType,
+            ]);
+        }
+    }
+
+    /**
+     * Get members of the room except me.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getMembersExceptMe()
+    {
+        $me = $this->chatworkApi->me();
+        return collect($this->getMembers())->filter(function ($member) use ($me) {
+            return $member->account_id != $me['account_id'];
+        });
     }
 }

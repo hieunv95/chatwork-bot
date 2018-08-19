@@ -8,7 +8,9 @@
         "php": ">=7.0",
         "laravel/lumen-framework": "5.5.*",
         "vlucas/phpdotenv": "~2.2",
-        "wataridori/chatwork-sdk": "^0.2.1"
+        "wataridori/chatwork-sdk": "^0.2.1",
+        "tumblr/tumblr": "^0.4.0",
+        "samwilson/phpflickr": "^4.4"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

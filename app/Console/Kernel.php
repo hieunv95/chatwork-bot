@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         Commands\RemindLunch::class,
+        Commands\RemindUnipos::class,
         Commands\SchedulerDaemon::class,
     ];
 
@@ -25,9 +26,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $tz = env('TZ') ?: 'Asia/Ho_Chi_Minh';
         $schedule->command('remind:lunch')
             ->weekdays()
-            ->dailyAt(env('REMIND_TIME'))
-            ->timezone('Asia/Ho_Chi_Minh');
+            ->dailyAt(env('REMIND_LUNCH_TIME'))
+            ->timezone($tz);
+        $schedule->command('remind:unipos')
+            ->fridays()
+            ->timezone($tz);
     }
 }

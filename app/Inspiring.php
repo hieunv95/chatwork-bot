@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class Inspiring
@@ -237,17 +238,168 @@ class Inspiring
     }
 
     /**
-     * Get a remind message for lunch.
+     * Get a remind message for sharing Unipos points.
+     *
+     * @param Collection $members
      *
      * @return string
      */
-    public static function remindLunch()
+    public static function remindUnipos(Collection $members)
     {
-        return Collection::make([
+        $messagesWithMemberID = self::buildRemindUniposMessagesWithMember($members->random());
+        $messages = [
+            'Share points đi bà con ơi ! (len3)',
+            'Mọi người gửi points chưa nhỉ ? :-?',
+            'Share points là quyền và nghĩa vụ của nhân viên. (nod4)',
+            'Mọi người được bao nhiêu points rồi ? (githe3)',
+            'Thứ 6 rồi bà con ơi, share points nào ! (tgif)',
+        ];
+        $messages = array_merge($messages, $messagesWithMemberID);
+
+        return collect($messages)->random();
+    }
+
+    /**
+     * Get a remind message for lunch.
+     *
+     * @param Collection $members
+     *
+     * @return string
+     */
+    public static function remindLunch(Collection $members)
+    {
+        $messagesWithMemberID = self::buildRemindLunchMessagesWithMember($members->random());
+        $now = Carbon::now(env('TZ') ?: 'Asia/Ho_Chi_Minh');
+        $fmtTime = $now->copy()->format('H\hi');
+        $messages = [
             'Đi ăn đi !',
             'Đi ăn thôi !',
             'Đi ăn trưa đi !',
             'Đi ăn trưa thôi !',
-        ])->random();
+            'Đi ăn đi, cả nhà ơi !',
+            'Đi ăn thôi, cả nhà ơi !',
+            'Đi ăn trưa đi, cả nhà ơi !',
+            'Đi ăn trưa thôi, cả nhà ơi !',
+            'Giờ ăn đến rồi, giờ ăn đến rồi !',
+            'Mọi người ơi ! Đi ăn thôi !',
+            'Nhấc mông đi ăn thôi, cả nhà ơi !',
+            'Nghỉ tay đi ăn nào !',
+            'Giờ vẫn chưa thèm đứng dậy đi ăn nữa hả ?!',
+            'Có đứng dậy đi ăn không thì bảo ?!',
+            'Đi ăn còn lấy sức làm việc tiếp chứ.',
+            'Ngày nào cũng phải nhắc đi ăn (haiz)',
+            'Đi ăn còn phải giục nữa hả (haiz)',
+            'Đọc được tin này thì biết phải làm gì rồi đó (hmm)',
+            'Sao vẫn ngồi yên tại chỗ thế này ? (kill)',
+            'Đi ăn sớm còn tranh thủ ngủ trưa nào (sleep)',
+            'Hôm nay có ai đi ăn không nào ?',
+            $fmtTime . ' rồiiiiiiiiiiiiiiiiiiiiiii !',
+            'Hôm nay ăn món gì nhỉ ?',
+            'Hôm nay ăn gà tần đi !',
+            'Hôm nay ăn bún đậu đi !',
+            'Hôm nay ăn bún chả đi !',
+            'Hôm nay ăn bún bò đi !',
+            'Hôm nay ăn bún cá đi !',
+            'Lâu rồi không ăn gà tần nhỉ ?',
+            'Lâu rồi không ăn bún đậu nhỉ ?',
+            'Lâu rồi không ăn bún chả nhỉ ?',
+            'Lâu rồi không ăn bún bò nhỉ ?',
+            'Lâu rồi không ăn bún cá nhỉ ?',
+            'Có ai đói chưa nhỉ ?',
+            'Có ai muốn đi ăn không ?',
+            'Không biết đến bao giờ mới tự giác đi ăn đây ? (haiz)',
+            'Ctrl + L, please!',
+            'Đói quá !',
+            'Nhìn cái gì, đi ăn thôi !',
+            'Ơ hay, định nhịn đói à ?',
+            'Định giành giải cống hiến à?',
+            'Đừng để phải nhắc lại lần nữa nhé ! ĐI ĂN THÔI !',
+            'Bây giờ là mấy giờ rồi hả ? (vaylasao)',
+            '(go)',
+            'Cố làm gì nữa, ĐI ĂN THÔI !',
+            'Đi ăn đi ! (go)',
+            'Đi ăn thôi ! (go)',
+            'Đi ăn trưa đi ! (go)',
+            'Đi ăn trưa thôi ! (go)',
+            'Đi ăn đi, cả nhà ơi ! (go)',
+            'Đi ăn thôi, cả nhà ơi ! (go)',
+            'Đi ăn trưa đi, cả nhà ơi ! (go)',
+            'Đi ăn trưa thôi, cả nhà ơi ! (go)',
+            'Đi ăn đi, bà con ơi ! (go)',
+            'Đi ăn thôi, bà con ơi ! (go)',
+            'Đi ăn trưa đi, bà con ơi ! (go)',
+            'Đi ăn trưa thôi, bà con ơi ! (go)',
+            'Giờ ăn đến rồi, giờ ăn đến rồi ! (clap2)',
+            'Mọi người ơi ! Đi ăn thôi ! (go)',
+            'Nhấc mông đi ăn thôi, cả nhà ơi ! (go)',
+            'Nghỉ tay đi ăn nào ! (go)',
+            'Giờ vẫn chưa thèm đứng dậy đi ăn nữa hả ?! (kill)',
+            'Có đứng dậy đi ăn không thì bảo ?! (kill)',
+            'Đi ăn còn lấy sức làm việc tiếp chứ. :-w',
+            'Hôm nay có ai đi ăn không nào (?)',
+            $fmtTime . ' rồiiiiiiiiiiiiiiiiiiiiiii ! (nono)',
+            'Hôm nay ăn món gì nhỉ :-?',
+            'Hôm nay ăn gà tần đi ! :-bd',
+            'Hôm nay ăn bún đậu đi ! :-bd',
+            'Hôm nay ăn bún chả đi ! :-bd',
+            'Hôm nay ăn bún bò đi ! :-bd',
+            'Hôm nay ăn bún cá đi ! :-bd',
+            'Lâu rồi không ăn gà tần nhỉ :-?',
+            'Lâu rồi không ăn bún đậu nhỉ :-?',
+            'Lâu rồi không ăn bún chả nhỉ :-?',
+            'Lâu rồi không ăn bún bò nhỉ :-?',
+            'Lâu rồi không ăn bún cá nhỉ :-?',
+            'Có ai đói chưa nhỉ :-?',
+            'Có ai muốn đi ăn không :-?',
+            'Ctrl + L, (please)',
+            'Đói quá ! (cry)',
+            'Nhìn cái gì, đi ăn thôi ! :-w',
+            'Ơ hay, định nhịn đói à ? :-s',
+            'Định giành giải cống hiến à? :-ss',
+            'Đừng để phải nhắc lại lần nữa nhé (hmm) ! ĐI ĂN THÔI !',
+            'Cố làm gì nữa :-?? , ĐI ĂN THÔI ! ',
+            'Mọi người ơi ! Trư đói (khoc)',
+            'Anh chị ơi ! Trư đói quá (khoc3)',
+            'Trư muốn đi ăn (khongchiudau3)',
+            'Trư đang giảm cân. Mọi người cứ đi ăn trước đi nhé (dangyeu2)',
+        ];
+        $messages = array_merge($messages, $messagesWithMemberID);
+
+        return collect($messages)->random();
+    }
+
+    private static function buildRemindLunchMessagesWithMember($member = null)
+    {
+        if (!empty($member) && isset($member->account_id)) {
+            $memberID = '[To:' . $member->account_id . ']';
+
+            return [
+                $memberID . ' gọi mọi người đi ăn thôi (go)',
+                $memberID . ' giục mọi người đi ăn đi (yaoming)',
+                'Hôm nay ' . $memberID . ' có đi làm không, rủ mọi người đi ăn giúp Trư với (bow)',
+                'Hôm nay đến lượt ' . $memberID . ' rủ mọi người đi ăn đó (hihi)',
+                'Hôm nay ' . $memberID . ' làm nhiệm vụ thay Trư nhé (hoho)',
+                'Hôm nay ' . $memberID . ' sẽ quyết định chọn ăn món gì nhé (chuckle)',
+                'Mọi người đi ăn nhớ rủ ' . $memberID . ' nhé :-c',
+                $memberID . ' đói chưa ạ ? Rủ mọi người đi ăn thôi (honho)',
+                'Hôm nay ' . $memberID . ' chủ trì đi ăn nhé (huytsao2)',
+            ];
+        }
+
+        return [];
+    }
+
+    private static function buildRemindUniposMessagesWithMember($member = null)
+    {
+        if (!empty($member) && isset($member->account_id)) {
+            $memberID = '[To:' . $member->account_id . ']';
+
+            return [
+                $memberID . ' gửi points chưa nhỉ ? :-?',
+                'Mọi người nhớ gửi points cho ' . $memberID . ' nhé ;)',
+            ];
+        }
+
+        return [];
     }
 }
