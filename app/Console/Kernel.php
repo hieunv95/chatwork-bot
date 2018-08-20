@@ -31,8 +31,8 @@ class Kernel extends ConsoleKernel
             ->weekdays()
             ->dailyAt(env('REMIND_LUNCH_TIME'))
             ->timezone($tz);
-        $schedule->command('remind:unipos')
+        /*$schedule->command('remind:unipos')
             ->fridays()
-            ->timezone($tz);
+            ->timezone($tz);*/
     }
 }
