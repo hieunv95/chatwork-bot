@@ -77,7 +77,10 @@ class ChatworkRoom extends ChatworkRoomBase
 
     public function sendMessageToAllWithShortcut(int $messageType = null, string $messageContent = '')
     {
-        $messageQuery = $this->messageModel->where('type', $messageType);
+        $messageQuery = $this->messageModel->where([
+            'room_id' => $this->room_id,
+            'type' => $messageType,
+        ]);
         $oldMessage = $messageQuery->first();
         if ($oldMessage && isset($oldMessage->id)) {
             $this->chatworkApi->deleteMessage($this->room_id, $oldMessage->id);
@@ -88,6 +91,7 @@ class ChatworkRoom extends ChatworkRoomBase
         if ($currentMessage && isset($currentMessage['message_id'])) {
             $this->messageModel->create([
                 'id' => $currentMessage['message_id'],
+                'room_id' => $this->room_id,
                 'type' => $messageType,
             ]);
         }
