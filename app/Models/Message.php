@@ -16,6 +16,7 @@ class Message extends Model
      */
     protected $fillable = [
         'id',
+        'room_id',
         'type',
     ];
 }
