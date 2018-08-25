@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Api\OpenWeatherMap\OpenWeatherMap;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -265,6 +266,8 @@ class Inspiring
      * @param Collection $members
      *
      * @return string
+     *
+     * @throws \Exception
      */
     public static function remindLunch(Collection $members)
     {
@@ -365,7 +368,7 @@ class Inspiring
         ];
         $messages = array_merge($messages, $messagesWithMemberID);
 
-        return collect($messages)->random();
+        return collect($messages)->random() . PHP_EOL . self::buildWeatherMessage();
     }
 
     private static function buildRemindLunchMessagesWithMember($member = null)
@@ -403,5 +406,50 @@ class Inspiring
         }
 
         return [];
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private static function buildWeatherMessage()
+    {
+        $openWeatherMap = new OpenWeatherMap();
+        $message = '';
+        $currentWeatherMessage = $openWeatherMap->getCurrentWeatherMessage();
+        if ($currentWeatherMessage) {
+            $message = collect([
+                    'Hôm nay trời',
+                    'Thời tiết hôm nay: trời',
+                    'Tin thời tiết: trời',
+                    'Giờ trời đang',
+            ])->random() . ' ' . $currentWeatherMessage . '. ';
+        }
+
+        $message .= 'Nhiệt độ hiện tại là: '
+            . str_replace('&deg;', '°', $openWeatherMap->getFormatedCurrentTemparature());
+        if ($openWeatherMap->isRaining() && !$openWeatherMap->isHeavyRaining()) {
+            $message .= PHP_EOL . collect([
+                'Anh chị ',
+                'Mọi người ',
+                'Bà con ',
+                'Cả nhà ',
+                'Các chế ',
+            ])->random() . collect([
+                'ra ngoài nhớ mang ô nhé ! ;)',
+                'ra ngoài nhớ cầm theo ô nhé ! ;)',
+                'ra ngoài nhớ chuẩn bị ô nhé ! ;)',
+            ])->random();
+        }
+
+        if ($openWeatherMap->isHeavyRaining()) {
+            $message .= PHP_EOL . collect([
+                'Mưa thế này có nên ra ngoài ăn không nhỉ ? :-/',
+                'Thời tiết này đi ra ngoài ngại lắm đây . :-?',
+                'Thời tiết không ủng hộ đi ăn ở ngoài rồi . :-ss',
+                'Mưa thế này biết ăn ở đâu giờ ? :-s'
+            ])->random();
+        }
+
+        return $message;
     }
 }

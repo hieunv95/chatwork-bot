@@ -4,6 +4,8 @@ namespace app\Console\Commands;
 
 use App\Inspiring;
 use App\Models\Message;
+use Carbon\Carbon;
+use Gmopx\LaravelOWM\LaravelOWM;
 use Illuminate\Console\Command;
 use wataridori\ChatworkSDK\ChatworkSDK;
 use App\Api\ChatworkExtend\ChatworkApi;
@@ -40,22 +42,33 @@ class RemindLunch extends Command
     }
 
     /**
-     * @throws \wataridori\ChatworkSDK\Exception\ChatworkSDKException
+     * @throws \Exception
      */
     public function handle()
     {
-        switch (env('MESSAGE_LUNCH_TYPE')) {
-            case self::TO_ALL_TYPE:
-                $this->sendMessageToAllByRoomID(env('ROOM_ID'));
-                break;
-            case self::TO_DIRECT_TYPE:
-                $this->sendDirectMessages();
-                break;
-            default:
-                return;
+        $tz = env('TZ') ?: 'Asia/Ho_Chi_Minh';
+        try {
+            switch (env('MESSAGE_LUNCH_TYPE')) {
+                case self::TO_ALL_TYPE:
+                    $this->sendMessageToAllByRoomID(env('ROOM_ID'));
+                    break;
+                case self::TO_DIRECT_TYPE:
+                    $this->sendDirectMessages();
+                    break;
+                default:
+                    return;
+            }
+        } catch (\Exception $e) {
+            $this->line('<info>[' . Carbon::now($tz)->format('Y-m-d H:i:s') . ']</info> Exception:' . PHP_EOL
+                . '<error>' . $e->getMessage() . '</error>' . PHP_EOL . $e->getTraceAsString());
         }
     }
 
+    /**
+     * @param string|null $roomId
+     *
+     * @throws \Exception
+     */
     private function sendMessageToAllByRoomID(string $roomId = null)
     {
         if (isset($roomId)) {

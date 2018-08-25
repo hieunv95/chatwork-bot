@@ -93,6 +93,13 @@ $app->singleton(
 |
 */
 
+$app->make('config')->set([
+    'laravel-owm' => [
+        'api_key' => env('OPEN_WEATHER_MAP_API_KEY'),
+        'routes_enabled' => false,
+    ],
+]);
+
 $app->router->group([
     'namespace' => 'App\Http\Controllers',
 ], function ($router) {
