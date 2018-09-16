@@ -275,7 +275,7 @@ class Inspiring
         $now = Carbon::now(env('TZ') ?: 'Asia/Ho_Chi_Minh');
         $fmtTime = $now->copy()->format('H\hi');
         $messages = [
-            /*'Đi ăn đi !',
+            'Đi ăn đi !',
             'Đi ăn thôi !',
             'Đi ăn trưa đi !',
             'Đi ăn trưa thôi !',
@@ -319,7 +319,7 @@ class Inspiring
             'Đừng để phải nhắc lại lần nữa nhé ! ĐI ĂN THÔI !',
             'Bây giờ là mấy giờ rồi hả ? (vaylasao)',
             '(go)',
-            'Cố làm gì nữa, ĐI ĂN THÔI !',*/
+            'Cố làm gì nữa, ĐI ĂN THÔI !',
             'Đi ăn đi ! (go)',
             'Đi ăn thôi ! (go)',
             'Đi ăn trưa đi ! (go)',
@@ -336,7 +336,7 @@ class Inspiring
             'Mọi người ơi ! Đi ăn thôi ! (go)',
             'Nhấc mông đi ăn thôi, cả nhà ơi ! (go)',
             'Nghỉ tay đi ăn nào ! (go)',
-            /*'Giờ vẫn chưa thèm đứng dậy đi ăn nữa hả ?! (kill)',
+            'Giờ vẫn chưa thèm đứng dậy đi ăn nữa hả ?! (kill)',
             'Có đứng dậy đi ăn không thì bảo ?! (kill)',
             'Đi ăn còn lấy sức làm việc tiếp chứ. :-w',
             'Hôm nay có ai đi ăn không nào (?)',
@@ -364,7 +364,7 @@ class Inspiring
             'Mọi người ơi ! Trư đói (khoc)',
             'Anh chị ơi ! Trư đói quá (khoc3)',
             'Trư muốn đi ăn (khongchiudau3)',
-            'Trư đang giảm cân. Mọi người cứ đi ăn trước đi nhé (dangyeu2)',*/
+            'Trư đang giảm cân. Mọi người cứ đi ăn trước đi nhé (dangyeu2)',
         ];
         $messages = array_merge($messages, $messagesWithMemberID);
 
@@ -373,7 +373,6 @@ class Inspiring
 
     private static function buildRemindLunchMessagesWithMember($member = null)
     {
-        return [];
         if (!empty($member) && isset($member->account_id)) {
             $memberID = '[To:' . $member->account_id . ']';
 
@@ -395,7 +394,6 @@ class Inspiring
 
     private static function buildRemindUniposMessagesWithMember($member = null)
     {
-        return [];
         if (!empty($member) && isset($member->account_id)) {
             $memberID = '[To:' . $member->account_id . ']';
 
