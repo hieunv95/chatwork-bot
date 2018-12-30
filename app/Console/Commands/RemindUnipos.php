@@ -8,6 +8,7 @@ use App\Inspiring;
 use App\Models\Message;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Services\DateService;
 use wataridori\ChatworkSDK\ChatworkSDK;
 
 class RemindUnipos extends Command
@@ -44,7 +45,7 @@ class RemindUnipos extends Command
     public function handle()
     {
         $roomId = env('ROOM_ID');
-        if (isset($roomId) && Carbon::now()->isFriday()) {
+        if (isset($roomId) && DateService::isNotHoliday() && Carbon::now()->isFriday()) {
             $chatworkRoom = new ChatworkRoom($roomId);
             $url = 'https://unipos.me/all';
             $message = '[toall]' . PHP_EOL . Inspiring::remindUnipos($chatworkRoom->getMembersExceptMe())

@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
+use Services\DateService;
 
 class Kernel extends ConsoleKernel
 {
@@ -27,10 +28,13 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $tz = env('TZ') ?: 'Asia/Ho_Chi_Minh';
-        $schedule->command('remind:lunch')
-            ->weekdays()
-            ->dailyAt(env('REMIND_LUNCH_TIME'))
-            ->timezone($tz);
+        if (DateService::isNotHoliday()) {
+            $schedule->command('remind:lunch')
+                ->weekdays()
+                ->dailyAt(env('REMIND_LUNCH_TIME'))
+                ->timezone($tz);
+        }
+
         /*$schedule->command('remind:unipos')
             ->fridays()
             ->timezone($tz);*/

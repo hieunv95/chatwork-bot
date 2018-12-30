@@ -5,7 +5,6 @@ namespace app\Console\Commands;
 use App\Inspiring;
 use App\Models\Message;
 use Carbon\Carbon;
-use Gmopx\LaravelOWM\LaravelOWM;
 use Illuminate\Console\Command;
 use wataridori\ChatworkSDK\ChatworkSDK;
 use App\Api\ChatworkExtend\ChatworkApi;
