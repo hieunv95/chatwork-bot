@@ -33,6 +33,10 @@ class Kernel extends ConsoleKernel
                 ->weekdays()
                 ->dailyAt(env('REMIND_LUNCH_TIME'))
                 ->timezone($tz);
+        } elseif (DateService::isDateCompensation()) {
+            $schedule->command('remind:lunch')
+                ->dailyAt(env('REMIND_LUNCH_TIME'))
+                ->timezone($tz);
         }
 
         /*$schedule->command('remind:unipos')
