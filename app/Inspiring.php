@@ -420,6 +420,7 @@ class Inspiring
                     'Thời tiết hôm nay: trời',
                     'Tin thời tiết: trời',
                     'Giờ trời đang',
+                    'Lúc này trời đang',
             ])->random() . ' ' . $currentWeatherMessage . '. ';
         }
 
