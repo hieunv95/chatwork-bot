@@ -444,7 +444,8 @@ class Inspiring
                 'Mưa thế này có nên ra ngoài ăn không nhỉ ? :-/',
                 'Thời tiết này đi ra ngoài ngại lắm đây . :-?',
                 'Thời tiết không ủng hộ đi ăn ở ngoài rồi . :-ss',
-                'Mưa thế này biết ăn ở đâu giờ ? :-s'
+                'Mưa thế này biết ăn ở đâu giờ ? :-s',
+                'Mưa gió thế này thì ăn dưới hầm thôi!',
             ])->random();
         }
 
