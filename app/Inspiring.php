@@ -365,6 +365,7 @@ class Inspiring
             'Anh chị ơi ! Trư đói quá (khoc3)',
             'Trư muốn đi ăn (khongchiudau3)',
             'Trư đang giảm cân. Mọi người cứ đi ăn trước đi nhé (dangyeu2)',
+            'Hôm nay lại ăn cơm cá nhỉ?',
         ];
         $messages = array_merge($messages, $messagesWithMemberID);
 
