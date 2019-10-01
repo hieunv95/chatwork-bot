@@ -436,6 +436,7 @@ class Inspiring
                 'ra ngoài nhớ mang ô nhé ! ;)',
                 'ra ngoài nhớ cầm theo ô nhé ! ;)',
                 'ra ngoài nhớ chuẩn bị ô nhé ! ;)',
+                'ra ngoài cẩn thận mưa gió nhé ! ;)',
             ])->random();
         }
 
