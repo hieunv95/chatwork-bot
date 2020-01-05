@@ -77,14 +77,18 @@ class ChatworkRoom extends ChatworkRoomBase
 
     public function sendMessageToAllWithShortcut(int $messageType = null, string $messageContent = '')
     {
-        $messageQuery = $this->messageModel->where([
-            'room_id' => $this->room_id,
-            'type' => $messageType,
-        ]);
-        $oldMessage = $messageQuery->first();
-        if ($oldMessage && isset($oldMessage->id)) {
-            $this->chatworkApi->deleteMessage($this->room_id, $oldMessage->id);
-            $messageQuery->delete();
+        try {
+            $messageQuery = $this->messageModel->where([
+                'room_id' => $this->room_id,
+                'type' => $messageType,
+            ]);
+            $oldMessage = $messageQuery->first();
+            if ($oldMessage && isset($oldMessage->id)) {
+                $this->chatworkApi->deleteMessage($this->room_id, $oldMessage->id);
+                $messageQuery->delete();
+            }
+        } catch (\Exception $e) {
+            \Log::info($e->getMessage());
         }
 
         $currentMessage = $this->sendMessage($messageContent);

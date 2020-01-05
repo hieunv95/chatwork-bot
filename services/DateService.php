@@ -3,58 +3,62 @@
 namespace Services;
 
 use Carbon\Carbon;
+use peterkahl\Lunar\Lunar;
 
 class DateService
 {
-    const HOLIDAYS_2018 = [
+    const GREGORIAN_HOLIDAYS = [
         '0101',
-        '1402',
-        '1502',
-        '1602',
-        '1902',
-        '2002',
-        '2504',
         '3004',
         '0105',
-        '1308',
-        '1408',
-        '0309',
-        '3112',
-    ];
-    const HOLIDAYS_2019 = [
-        '0101',
-        '0402',
-        '0502',
-        '0602',
-        '0702',
-        '0802',
-        '1504',
-        '2904',
-        '3004',
-        '0105',
-        '1208',
-        '1308',
-        '1408',
         '0209',
     ];
-    const DATE_COMPENSATION_2019 = ['0501', '0405'];
 
+    const LUNAR_HOLIDAYS = [
+        '3012',
+        '0101',
+        '0201',
+        '0301',
+        '0401',
+        '1003',
+    ];
+
+    /**
+     * Check if the current date is the holiday.
+     *
+     * @return bool
+     */
     public static function isHoliday()
     {
         $now = Carbon::now();
-        $date = $now->format('dm');
         $isWeekend = $now->isWeekend();
+        $date = $now->format('dm');
+        $dateWithYear =  $now->format('dmy');
+        $lunarDate = Lunar::Gregorian2Lunar($now->format('Y-m-d'));
+        $lunarDate = str_replace('-', '', $lunarDate['en'] ?? '');
 
-        return in_array($date, self::HOLIDAYS_2019) || $isWeekend;
+        return $isWeekend || in_array($date, self::GREGORIAN_HOLIDAYS)
+            || in_array($lunarDate, self::LUNAR_HOLIDAYS)
+            || in_array($dateWithYear, explode(',', env('HOLIDAYS')));
     }
 
+    /**
+     * Check if the current date is not the holiday.
+     *
+     * @return bool
+     */
     public static function isNotHoliday()
     {
         return !self::isHoliday();
     }
 
+    /**
+     * Check if the current date is compensation date.
+     *
+     * @return bool
+     */
     public static function isDateCompensation()
     {
-        return in_array(Carbon::now()->format('dm'), self::DATE_COMPENSATION_2019);
+        return in_array(Carbon::now()->format('dmy'), explode(',', env('COMPENSATION_DATES')));
     }
 }

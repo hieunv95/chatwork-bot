@@ -11,7 +11,8 @@
         "wataridori/chatwork-sdk": "^0.2.1",
         "tumblr/tumblr": "^0.4.0",
         "samwilson/phpflickr": "^4.4",
-        "gmopx/laravel-owm": "^0.1.2"
+        "gmopx/laravel-owm": "^0.1.2",
+        "peterkahl/chinese-lunar-calendar": "^1.0"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
