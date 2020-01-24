@@ -35,7 +35,7 @@ class DateService
         $date = $now->format('dm');
         $dateWithYear =  $now->format('dmy');
         $lunarDate = Lunar::Gregorian2Lunar($now->format('Y-m-d'));
-        $lunarDate = str_replace('-', '', $lunarDate['en'] ?? '');
+        $lunarDate = $lunarDate['d'] . $lunarDate['m'];
 
         return $isWeekend || in_array($date, self::GREGORIAN_HOLIDAYS)
             || in_array($lunarDate, self::LUNAR_HOLIDAYS)
