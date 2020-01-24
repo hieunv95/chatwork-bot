@@ -103,12 +103,12 @@ class ChatworkController extends Controller
      */
     private function getAnswerFromSimi($mentionMesssage = '')
     {
-        $botName = data_get($this->chatworkApi->me(), 'name') ?? '';
-        $botName = preg_replace('/[^\pL\s]+/u', '', $botName);
+        $originalBotName = data_get($this->chatworkApi->me(), 'name') ?? '';
+        $botName = preg_replace('/[^\pL\s]+/u', '', $originalBotName);
         $botName = trim($botName);
         $utext = preg_replace('/\[.*?]/', '', $mentionMesssage);
         $utext = preg_replace('/\s+/', ' ', $utext);
-        $utext = preg_replace('/' . $botName . '/', ' ', $utext);
+        $utext = preg_replace('/' . $originalBotName . '/i', ' ', $utext);
         $utext = trim($utext);
         if ($utext === '') {
             return '(??)';
@@ -125,13 +125,17 @@ class ChatworkController extends Controller
         }';
 
         try {
-            $response = Requests::post('https://wsapi.simsimi.com/190410/talk', $headers, $data);
+            $response = Requests::post(
+                env('SIMSIMI_API_ENDPOINT', 'https://wsapi.simsimi.com/190410/talk'),
+                $headers,
+                $data
+            );
             $answerText = data_get(json_decode($response->body, true), 'atext') ?? '';
             $answerText = preg_replace('/sim|símimi|simimi|simi|simsimi|símini/i', $botName, $answerText);
         } catch (\Exception $e) {
             \Log::info($e);
         }
 
-        return $answerText === '' ? '(think)' : $answerText;
+        return in_array($answerText, ['', 'iy']) ? '(think)' : $answerText;
     }
 }
