@@ -12,5 +12,10 @@
 */
 
 $router->get('/', function () use ($router) {
-    return $router->app->version();
+    return 'OK';
 });
+
+$router->post('/chatwork-hook', [
+    'uses' => 'ChatworkController@handleWebhook',
+    'middleware' => 'verifyChatworkWebhookSignature',
+]);

@@ -1,5 +1,7 @@
 <?php
 
+use wataridori\ChatworkSDK\ChatworkSDK;
+
 require_once __DIR__.'/../vendor/autoload.php';
 
 try {
@@ -67,6 +69,10 @@ $app->singleton(
 //     'auth' => App\Http\Middleware\Authenticate::class,
 // ]);
 
+ $app->routeMiddleware([
+    'verifyChatworkWebhookSignature' => App\Http\Middleware\VerifyChatworkWebhookSignature::class,
+ ]);
+
 /*
 |--------------------------------------------------------------------------
 | Register Service Providers
@@ -105,5 +111,8 @@ $app->router->group([
 ], function ($router) {
     require __DIR__.'/../routes/web.php';
 });
+
+ChatworkSDK::setApiKey(env('CHATWORK_API_KEY'));
+ChatworkSDK::setSslVerificationMode(false);
 
 return $app;
