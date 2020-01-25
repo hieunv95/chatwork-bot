@@ -111,7 +111,9 @@ class ChatworkController extends Controller
         $utext = preg_replace('/' . $originalBotName . '/i', ' ', $utext);
         $utext = trim($utext);
         if ($utext === '') {
-            return '(??)';
+            $questionMarks = ['(?)', '(??)', '(???)'];
+
+            return $questionMarks[mt_rand(0, count($questionMarks) - 1)];
         }
 
         $answerText = '';
@@ -131,7 +133,7 @@ class ChatworkController extends Controller
                 $data
             );
             $answerText = data_get(json_decode($response->body, true), 'atext') ?? '';
-            $answerText = preg_replace('/sim|símimi|simimi|simi|simsimi|símini/i', $botName, $answerText);
+            $answerText = preg_replace('/simsimi|símimi|simimi|símini|simi|sisi|sim/i', $botName, $answerText);
         } catch (\Exception $e) {
             \Log::info($e);
         }
