@@ -132,8 +132,7 @@ class ChatworkController extends Controller
         $data = '{
             "utext": "' . $utext . '", 
             "lang": "vn",
-            "country": ["VN"],
-            "atext_bad_prob_max": 0.1
+            "atext_bad_prob_max": 0.0
         }';
 
         try {
@@ -186,7 +185,7 @@ class ChatworkController extends Controller
         }
 
         if ($notDeletableCount) {
-            return 'Mội vài tin nhắn chính chủ vào xóa thì hay hơn ạ :v';
+            return 'Mội vài tin nhắn, chính chủ vào xóa thì hay hơn ạ :v';
         }
 
         return 'Em đã xóa tin nhắn rồi nhé ;)';
