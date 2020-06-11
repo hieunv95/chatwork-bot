@@ -72,7 +72,7 @@ class RemindLunch extends Command
     {
         if (isset($roomId)) {
             $chatworkRoom = new ChatworkRoom($roomId);
-            $message = '[toall]' . PHP_EOL . Inspiring::remindLunch($chatworkRoom->getMembersExceptMe());
+            $message = 'TO ALL >>>' . PHP_EOL . Inspiring::remindLunch($chatworkRoom->getMembersExceptMe());
             $chatworkRoom->sendMessageToAllWithShortcut(Message::REMIND_LUNCH_TYPE, $message);
         }
     }
