@@ -13,7 +13,8 @@
         "samwilson/phpflickr": "^4.4",
         "gmopx/laravel-owm": "^0.1.2",
         "peterkahl/chinese-lunar-calendar": "^1.0",
-        "rmccue/requests": "^1.7"
+        "rmccue/requests": "^1.7",
+        "ext-json": "*"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

@@ -18,6 +18,8 @@ class ChatworkRoom extends ChatworkRoomBase
 
     /**
      * Constructor.
+     *
+     * @param $roomId
      */
     public function __construct($roomId)
     {
@@ -88,7 +90,7 @@ class ChatworkRoom extends ChatworkRoomBase
                 $messageQuery->delete();
             }
         } catch (\Exception $e) {
-            \Log::info($e->getMessage());
+            \Log::error($e->getMessage());
         }
 
         $currentMessage = $this->sendMessage($messageContent);

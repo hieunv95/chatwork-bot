@@ -4,10 +4,21 @@ namespace App;
 
 use App\Api\OpenWeatherMap\OpenWeatherMap;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 
 class Inspiring
 {
+    const QUOTE_CATEGORIES = [
+        'inspire' => '(lightbulb)',
+        'management' => '8-|',
+        'life' => '(F)',
+        'funny' => ':D',
+        'love' => '(h)',
+        'art' => '(*)',
+    ];
+
     /**
      * Get an inspiring quote.
      *
@@ -474,7 +485,34 @@ class Inspiring
         $weatherNews .= 'Nhiệt độ hiện tại là: '
             . str_replace('&deg;', '°', $openWeatherMap->getFormatedCurrentTemparature());
 
-        return collect($messages)->random() . PHP_EOL . $weatherNews . PHP_EOL . PHP_EOL
-            . '(lightbulb) Today\'s interesting quote:' . PHP_EOL . self::quote();
+        return collect($messages)->random() . PHP_EOL . $weatherNews . PHP_EOL . PHP_EOL . self::quoteFromTheySaidSo();
+    }
+
+    /**
+     * Get daily quotes from TheySaidSo (https://theysaidso.com/api/#php)
+     *
+     * @return string
+     */
+    public static function quoteFromTheySaidSo()
+    {
+        try {
+            $guzzleClient = new Client(['verify' => false, 'headers' => ['Content-Type' => 'application/json']]);
+            $quoteCategory = collect(self::QUOTE_CATEGORIES)->flip()->random();
+            $quoteRequest = $guzzleClient->get('https://quotes.rest/qod?category=' . $quoteCategory);
+
+            if ($quoteRequest->getStatusCode() === Response::HTTP_OK) {
+                $quote = json_decode($quoteRequest->getBody());
+                $quoteContent = '"' . data_get($quote, 'contents.quotes.0.quote') . '"';
+                $quoteAuthor = data_get($quote, 'contents.quotes.0.author');
+                $quoteTitle = self::QUOTE_CATEGORIES[$quoteCategory] . ' '
+                    . data_get($quote, 'contents.quotes.0.title') . ':';
+
+                return $quoteTitle . PHP_EOL . implode(' - ', [$quoteContent, $quoteAuthor]);
+            }
+        } catch (\Exception $e) {
+            \Log::error($e);
+        }
+
+        return '(lightbulb) Today\'s interesting quote:' . PHP_EOL . self::quote();
     }
 }
