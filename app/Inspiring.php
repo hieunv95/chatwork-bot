@@ -451,4 +451,30 @@ class Inspiring
 
         return $message;
     }
+
+    /**
+     * @throws \Exception
+     */
+    public static function remindCheckout()
+    {
+        $weatherNews = '';
+        $openWeatherMap = new OpenWeatherMap();
+        $currentWeatherMessage = $openWeatherMap->getCurrentWeatherMessage();
+        $messages = [
+            'Mọi người nhớ quẹt thẻ check-out trước khi về nhé ;)',
+            'Đừng quên quẹt thẻ check-out trước khi về nhé ;)',
+            'Làm ơn quẹt thẻ check-out trước khi về ạ (please)',
+            'Đừng để mất form quên quẹt thẻ nhé mọi người (please)',
+        ];
+
+        if ($currentWeatherMessage) {
+            $weatherNews = 'Giờ trời đang ' . $currentWeatherMessage . '. ';
+        }
+
+        $weatherNews .= 'Nhiệt độ hiện tại là: '
+            . str_replace('&deg;', '°', $openWeatherMap->getFormatedCurrentTemparature());
+
+        return collect($messages)->random() . PHP_EOL . $weatherNews . PHP_EOL . PHP_EOL
+            . '(lightbulb) Today\'s interesting quote:' . PHP_EOL . self::quote();
+    }
 }

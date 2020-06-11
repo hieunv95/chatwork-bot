@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\RemindLunch::class,
         Commands\RemindUnipos::class,
+        Commands\RemindCheckout::class,
         Commands\SchedulerDaemon::class,
     ];
 
@@ -31,6 +32,9 @@ class Kernel extends ConsoleKernel
         if (DateService::isNotHoliday() || DateService::isDateCompensation()) {
             $schedule->command('remind:lunch')
                 ->dailyAt(env('REMIND_LUNCH_TIME'))
+                ->timezone($tz);
+            $schedule->command('remind:checkout')
+                ->dailyAt(env('REMIND_CHECKOUT_TIME'))
                 ->timezone($tz);
         }
 
