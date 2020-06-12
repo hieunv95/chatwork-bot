@@ -30,16 +30,6 @@ class RemindLunch extends Command
      */
     protected $description = 'Remind lunch';
 
-    protected $chatworkApi;
-
-    public function __construct()
-    {
-        parent::__construct();
-        ChatworkSDK::setApiKey(env('CHATWORK_API_KEY'));
-        ChatworkSDK::setSslVerificationMode(false);
-        $this->chatworkApi = new ChatworkApi();
-    }
-
     /**
      * @throws \Exception
      */

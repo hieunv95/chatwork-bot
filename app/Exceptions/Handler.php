@@ -2,6 +2,8 @@
 
 namespace App\Exceptions;
 
+use App\Api\ChatworkExtend\ChatworkApi;
+use App\Api\ChatworkExtend\ChatworkRoom;
 use Exception;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -34,6 +36,20 @@ class Handler extends ExceptionHandler
     public function report(Exception $e)
     {
         parent::report($e);
+
+        if ($this->shouldReport($e)) {
+            $reportRoom = new ChatworkRoom(env('ERROR_REPORT_ROOM_ID'));
+            $reportMessage = implode(PHP_EOL, [
+                '+ Env: ' . env('APP_ENV'),
+                '+ Message: [code]' . $e->getMessage() . '[/code]',
+                '+ File: ' . $e->getFile(),
+                '+ Line: ' . $e->getLine(),
+                '+ Logs site: '. env('LOG_SITE', 'https://dashboard.heroku.com/apps/chatwork-bot-remind/logs'),
+            ]);
+            $reportRoom->sendMessage(
+                $reportRoom->buildInfo($reportMessage, get_class($e))
+            );
+        }
     }
 
     /**

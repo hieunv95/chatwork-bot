@@ -26,16 +26,6 @@ class RemindCheckout extends Command
      */
     protected $description = 'Remind checkout';
 
-    protected $chatworkApi;
-
-    public function __construct()
-    {
-        parent::__construct();
-        ChatworkSDK::setApiKey(env('CHATWORK_API_KEY'));
-        ChatworkSDK::setSslVerificationMode(false);
-        $this->chatworkApi = new ChatworkApi();
-    }
-
     public function handle()
     {
         $tz = env('TZ') ?: 'Asia/Ho_Chi_Minh';
