@@ -2,7 +2,6 @@
 
 namespace App\Exceptions;
 
-use App\Api\ChatworkExtend\ChatworkApi;
 use App\Api\ChatworkExtend\ChatworkRoom;
 use Exception;
 use Illuminate\Validation\ValidationException;
@@ -37,7 +36,7 @@ class Handler extends ExceptionHandler
     {
         parent::report($e);
 
-        if ($this->shouldReport($e)) {
+        if (env('APP_ENV') !== 'local' && $this->shouldReport($e)) {
             $reportRoom = new ChatworkRoom(env('ERROR_REPORT_ROOM_ID'));
             $reportMessage = implode(PHP_EOL, [
                 '+ Env: ' . env('APP_ENV'),

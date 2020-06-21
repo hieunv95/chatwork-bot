@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
+use Illuminate\Support\Facades\DB;
 use Requests;
 use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
@@ -16,7 +18,12 @@ class ChatworkController extends Controller
         'to_account_id' => 'webhook_event.to_account_id',
         'message_id' => 'webhook_event.message_id',
         'message_body' => 'webhook_event.body',
+        'account_id' => 'webhook_event.account_id',
     ];
+
+    const TO_ALL_REGEX_PATTERN = '(\[toall\]|TO ALL >>>|TO ALL>>>|TOALL >>>|TOALL>>>)';
+    const ORDER_REGEX_PATTERN = '(order|đặt|thực đơn)';
+    const CONFIRMED_REGEX_PATTERN = '(confirm|confirmed|chot|chốt)';
 
     /**
      * @var Request
@@ -50,10 +57,308 @@ class ChatworkController extends Controller
             $this->roomId = $this->getWebhookVal('room_id');
             $this->chatworkRoom = new ChatworkRoom($this->roomId);
             $this->chatworkApi = new ChatworkApi();
-            $this->replyToMentionMessage();
+            $eventType = $this->getWebhookVal('webhook_event_type');
+
+            if ($eventType === 'mention_to_me') {
+                $this->replyToMentionMessage();
+            } elseif ($eventType === 'message_created' || $eventType === 'message_updated') {
+                $this->handleCreatedAndUpdatedMessageEvents();
+            }
         } catch (\Exception $e) {
-            \Log::info($e->getMessage());
+            \Log::error($e);
         }
+    }
+
+    private function deleteChangedOrderMessages()
+    {
+        $orderModel = new Order();
+
+        return $orderModel->where('message_id', $this->getWebhookVal('message_id'))
+            ->where('type', Order::INIT_TYPE)
+            ->delete();
+    }
+
+    private function isDeletedMessage($messageId)
+    {
+        $orderModel = new Order();
+
+        $message = $this->chatworkApi->getRoomMessageByMessageId(
+            $this->getWebhookVal('room_id'),
+            $messageId
+        );
+
+        if (data_get($message, 'body') === '[deleted]') {
+            $order = $orderModel->where('message_id', $messageId)
+                ->where('type', Order::INIT_TYPE)
+                ->first();
+
+            if ($order) {
+                $order->children()->forceDelete();
+                $order->forceDelete();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function handleCreatedAndUpdatedMessageEvents()
+    {
+        $orderModel = new Order();
+        $messageBody = $this->getWebhookVal('message_body');
+        $lowerMessageBody = mb_strtolower($messageBody);
+
+        if (preg_match(self::TO_ALL_REGEX_PATTERN, $messageBody) === 1
+            && preg_match(self::ORDER_REGEX_PATTERN, $lowerMessageBody) === 1) {
+            $this->trackToAllInitialOrder();
+        } elseif (!$this->deleteChangedOrderMessages()) {
+            preg_match_all('/\[rp aid=.*to=.*-(.*?)]/m', $messageBody, $repliedMessageIdMatches);
+            $repliedMessageId = $repliedMessageIdMatches[1][0] ?? null;
+
+            if ($repliedMessageId && !$this->isDeletedMessage($repliedMessageId)) {
+                $mainContent = preg_replace('/\[.*?]/', '', $messageBody);
+                $mainContent = trim(preg_replace('/\s+/', '', $mainContent));
+                preg_match_all('/(?<=|^)[-+]\d+(?=|$)/', $mainContent, $quantityMatches);
+                $doesContainValidOrderQuantity = is_numeric(trim($quantityMatches[0][0] ?? false));
+                $initialOrder = $orderModel
+                    ->where(['message_id' => $repliedMessageId, 'type' => Order::INIT_TYPE])
+                    ->first();
+
+                if (!$initialOrder) {
+                    $order = $orderModel
+                        ->withTrashed()
+                        ->where('message_id', $repliedMessageId)
+                        ->whereIn('type', [Order::PREVIEW_TYPE, Order::CONFIRMED_TYPE])
+                        ->first();
+                    $initialOrder = $order->parentOrder ?? null;
+                }
+
+                if ($doesContainValidOrderQuantity && $initialOrder) {
+                    $this->trackRegisteredOrder($initialOrder, $quantityMatches);
+                } elseif (!$doesContainValidOrderQuantity && $initialOrder
+                    && $orderModel->where('message_id', $this->getWebhookVal('message_id'))->delete()) {
+                    $this->sendPreviewOrderMessage($initialOrder);
+                } else {
+                    $this->trackConfirmedOrder($repliedMessageId);
+                }
+            }
+        }
+    }
+
+    private function trackToAllInitialOrder()
+    {
+        $messageId = $this->getWebhookVal('message_id');
+        $roomId = $this->getWebhookVal('room_id');
+        $accountName = data_get(
+            $this->chatworkApi->getRoomMessageByMessageId($roomId, $messageId),
+            'account.name'
+        );
+        $orderModel = new Order();
+        $doesExistMessage = $orderModel->withTrashed()->where('message_id', $messageId)->exists();
+        $messageData = [
+            'message_id' => $messageId,
+            'room_id' => $roomId,
+            'account_id' => $this->getWebhookVal('account_id'),
+            'account_name' => $accountName,
+            'type' => Order::INIT_TYPE,
+            'deleted_at' => null,
+        ];
+
+        if ($doesExistMessage) {
+            $orderModel->withTrashed()->where('message_id', $messageId)->update($messageData);
+        } else {
+            $orderModel->create($messageData);
+        }
+    }
+
+    private function sendPreviewOrderMessage($initialOrder)
+    {
+        $orderModel = new Order();
+        $roomId = $this->getWebhookVal('room_id');
+
+        $initialOrder->previewOrders->each(function ($order) use ($roomId) {
+            $this->chatworkApi->deleteMessage($roomId, $order->message_id);
+        });
+        $initialOrder->previewOrders()->delete();
+        $validOrders = $initialOrder
+            ->registeredOrders()
+            ->select('account_id', DB::raw("SUM('ordered_quantity')"))
+            ->groupBy('account_id')
+            ->havingRaw('SUM(ordered_quantity) > ?', [0])
+            ->pluck('account_id')
+            ->toArray();
+        $registeredOrders = $initialOrder
+            ->registeredOrders
+            ->map(function ($order) use ($roomId, $orderModel, $validOrders) {
+                if (!in_array($order->account_id, $validOrders)) {
+                    return false;
+                }
+
+                $repliedMessage = $this->chatworkApi->getRoomMessageByMessageId(
+                    $roomId,
+                    $order->message_id
+                );
+
+                if (data_get($repliedMessage, 'body') === '[deleted]') {
+                    $orderModel->where('message_id', $order->message_id)->forceDelete();
+
+                    return false;
+                }
+
+                return $order;
+            })
+            ->filter();
+        $previewContent = $this->buildPreviewOrderMessage($initialOrder, $registeredOrders);
+        $previewOrderMessage = $this->chatworkRoom->sendMessage($previewContent);
+        $orderModel->create([
+            'message_id' => data_get($previewOrderMessage, 'message_id'),
+            'type' => Order::PREVIEW_TYPE,
+            'parent_order_id' => $initialOrder->getKey(),
+        ]);
+
+        $accountId = $this->getWebhookVal('account_id');
+        $messageId = $this->getWebhookVal('message_id');
+
+        if ($initialOrder->status === Order::CONFIRMED_STATUS && $initialOrder->account_id !== $accountId) {
+            $this->chatworkRoom->sendMessage(
+                "[rp aid={$accountId} to={$roomId}-{$messageId}]"
+                . PHP_EOL . 'Đơn đã chốt rồi. Có thể cần chốt lại ạ.'
+                . PHP_EOL . "CC: [picon:{$initialOrder->account_id}]"
+            );
+        }
+    }
+
+    private function trackRegisteredOrder(Order $initialOrder, $orderQuantities)
+    {
+        $orderModel = new Order();
+        $messageId = $this->getWebhookVal('message_id');
+        $roomId = $this->getWebhookVal('room_id');
+        $accountName = data_get(
+            $this->chatworkApi->getRoomMessageByMessageId($roomId, $messageId),
+            'account.name'
+        );
+        $doesExistMessage = $orderModel->withTrashed()->where('message_id', $messageId)->exists();
+        $messageData = [
+            'message_id' => $messageId,
+            'room_id' => $roomId,
+            'account_id' => $this->getWebhookVal('account_id'),
+            'account_name' => $accountName,
+            'type' => Order::REGISTER_TYPE,
+            'parent_order_id' => $initialOrder->getKey(),
+            'ordered_quantity' => collect($orderQuantities)->flatten()->sum(),
+            'deleted_at' => null,
+        ];
+
+        if ($doesExistMessage) {
+            $orderModel->withTrashed()->where('message_id', $messageId)->update($messageData);
+        } else {
+            $orderModel->create($messageData);
+        }
+
+        $this->sendPreviewOrderMessage($initialOrder);
+    }
+
+    private function trackConfirmedOrder(int $previewOrderMessageId)
+    {
+        $roomId = $this->getWebhookVal('room_id');
+        $messageBody = mb_strtolower($this->getWebhookVal('message_body'));
+        $orderModel = new Order();
+        $previewOrderMessage = $orderModel
+            ->where(['message_id' => $previewOrderMessageId, 'type' => Order::PREVIEW_TYPE])
+            ->first();
+
+        if ($previewOrderMessage && preg_match(self::CONFIRMED_REGEX_PATTERN, $messageBody) === 1
+            && $this->canConfirmOrder($previewOrderMessage->parentOrder)) {
+            $parentOrderId = $previewOrderMessage->parent_order_id;
+            $registeredOrders = $orderModel->where('parent_order_id', $parentOrderId)
+                ->where('type', Order::REGISTER_TYPE)
+                ->get();
+            $confirmedOrderContent = $this->buildConfirmOrderMessage(
+                $previewOrderMessage->parentOrder,
+                $registeredOrders
+            );
+            $orderModel->where('type', Order::CONFIRMED_TYPE)->where('parent_order_id', $parentOrderId)->get()
+                ->each(function ($order) use ($roomId) {
+                    $this->chatworkApi->deleteMessage($roomId, $order->message_id);
+                });
+            $orderModel->where('type', Order::CONFIRMED_TYPE)->where('parent_order_id', $parentOrderId)->delete();
+            $confirmedOrderMessage = $this->chatworkRoom->sendMessage($confirmedOrderContent);
+            $orderModel->create([
+                'message_id' => data_get($confirmedOrderMessage, 'message_id'),
+                'type' => Order::CONFIRMED_TYPE,
+                'parent_order_id' => $parentOrderId,
+            ]);
+            $previewOrderMessage->parentOrder()->update(['status' => Order::CONFIRMED_STATUS]);
+        }
+    }
+
+    private function canConfirmOrder($order)
+    {
+        $accountId = $this->getWebhookVal('account_id');
+
+        if (in_array($accountId, explode(',', env('ADMIN_CHATWORK_ID', '')))
+            || $accountId === $order->account_id) {
+            return true;
+        }
+
+        $roomId = $this->getWebhookVal('room_id');
+        $messageId = $this->getWebhookVal('message_id');
+        $this->chatworkRoom->sendMessage("[rp aid={$accountId} to={$roomId}-{$messageId}]"
+            . PHP_EOL . 'Chỉ người tạo order hoặc Admin mới có thể chốt. (bow)');
+
+        return false;
+    }
+
+    private function buildConfirmOrderMessage($initialOrder, $registeredOrders)
+    {
+        $validOrders = $initialOrder
+            ->registeredOrders()
+            ->select('account_id', DB::raw("SUM('ordered_quantity')"))
+            ->groupBy('account_id')
+            ->havingRaw('SUM(ordered_quantity) > ?', [0])
+            ->pluck('account_id')
+            ->toArray();
+        $registeredOrders = collect()->wrap($registeredOrders);
+        $memberList = $registeredOrders->map(function ($order) use ($validOrders) {
+            if (!in_array($order->account_id, $validOrders)) {
+                return false;
+            }
+
+            return '[rp aid=' . $order->account_id . ' to=' . $order->room_id . '-'
+                . $order->message_id . '] ' . $order->account_name
+                . ' : ' . $order->ordered_quantity;
+        })->filter()->implode(PHP_EOL);
+        $orderedQuantityTotal = $registeredOrders->sum('ordered_quantity');
+
+        return implode(PHP_EOL, [
+            "[info][title]Chốt đơn hàng[/title]- Người tạo đơn hàng: [piconname:{$initialOrder->account_id}]",
+            "- Link đặt hàng: https://www.chatwork.com/#!rid{$initialOrder->room_id}-{$initialOrder->message_id}",
+            '- Danh sách người đặt:',
+            $memberList,
+            "[hr]Tổng số lượng đặt : {$orderedQuantityTotal}",
+            '[/info]',
+        ]);
+    }
+
+    private function buildPreviewOrderMessage($initialOrder, $registeredOrders)
+    {
+        $registeredOrders = collect()->wrap($registeredOrders);
+        $memberList = $registeredOrders->map(function ($order) {
+            return $order->account_name . ' : ' . $order->ordered_quantity;
+        })->implode(PHP_EOL);
+        $orderedQuantityTotal = $registeredOrders->sum('ordered_quantity');
+
+        return implode(PHP_EOL, [
+            "[info][title]Xem trước đơn hàng[/title]- Người tạo đơn hàng: {$initialOrder->account_name}",
+            "- Link đặt hàng: https://www.chatwork.com/#!rid{$initialOrder->room_id}-{$initialOrder->message_id}",
+            '- Danh sách người đặt:',
+            $memberList,
+            "[hr]Tổng số lượng đặt : {$orderedQuantityTotal}",
+            '[code]Hướng dẫn: Người tạo đơn hàng trả lời "chốt" (hoặc "chot") vào tin nhắn này để hoàn tất đơn hàng ạ'
+            . '(bow)[/code]',
+            '[/info]',
+        ]);
     }
 
     /**
@@ -61,7 +366,9 @@ class ChatworkController extends Controller
      */
     private function replyToMentionMessage()
     {
-        $this->chatworkRoom->sendMessage($this->buildAnswerMessage());
+        if (($answerMessage = $this->buildAnswerMessage()) !== false) {
+            $this->chatworkRoom->sendMessage($answerMessage);
+        }
     }
 
     /**
@@ -91,8 +398,10 @@ class ChatworkController extends Controller
                 $mainAnswerContent = $this->deleteAnsweredMessages();
                 break;
             default:
-                $mainAnswerContent = $this->getAnswerFromSimi($mainMentionContent, $botName);
-                break;
+                // Temporary disable Simsimi API.
+                // $mainAnswerContent = $this->getAnswerFromSimi($mainMentionContent, $botName);
+                // break;
+                return false;
         }
 
         return "[rp aid={$fromAccountId} to={$this->roomId}-{$messageId}]" . PHP_EOL . $mainAnswerContent;
@@ -112,7 +421,7 @@ class ChatworkController extends Controller
             return $this->request->json();
         }
 
-        return $this->request->json(self::WEBHOOK_KEYS[$key] ?? null, $default);
+        return $this->request->json(self::WEBHOOK_KEYS[$key] ?? $key, $default);
     }
 
     /**

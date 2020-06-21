@@ -15,7 +15,8 @@
         "peterkahl/chinese-lunar-calendar": "^1.0",
         "rmccue/requests": "^1.7",
         "ext-json": "*",
-        "cmfcmf/openweathermap-php-api": "2.3.0"
+        "cmfcmf/openweathermap-php-api": "2.3.0",
+        "doctrine/dbal": "^2.10"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
