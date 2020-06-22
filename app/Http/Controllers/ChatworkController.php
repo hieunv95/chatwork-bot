@@ -297,8 +297,7 @@ class ChatworkController extends Controller
     {
         $accountId = $this->getWebhookVal('account_id');
 
-        if (in_array($accountId, explode(',', env('ADMIN_CHATWORK_ID', '')))
-            || $accountId === $order->account_id) {
+        if ($accountId === $order->account_id || $this->isAdminMember($accountId)) {
             return true;
         }
 
@@ -547,12 +546,14 @@ class ChatworkController extends Controller
     /**
      * Check if the sender is the admin.
      *
+     * @param  null  $accountId
+     *
      * @return bool
      */
-    public function isAdminMember()
+    public function isAdminMember($accountId = null)
     {
         try {
-            $fromAccountID = $this->getWebhookVal('from_account_id');
+            $fromAccountID = $accountId ?? $this->getWebhookVal('from_account_id');
             $members = $this->chatworkApi->getRoomMembersById($this->roomId);
             $isAdminMember = collect($members)
                 ->where('role', 'admin')
