@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Api\ChatworkExtend\ChatworkRoom;
+use App\Exceptions\Handler;
 use App\Inspiring;
 use App\Models\Message;
 use Carbon\Carbon;
@@ -31,6 +32,7 @@ class RemindCheckout extends Command
         try {
             $this->sendMessageToAllByRoomID(env('ROOM_ID'));
         } catch (\Exception $e) {
+            (new Handler())->report($e);
             $this->line('<info>[' . Carbon::now($tz)->format('Y-m-d H:i:s') . ']</info> Exception:' . PHP_EOL
                 . '<error>' . $e->getMessage() . '</error>' . PHP_EOL . $e->getTraceAsString());
         }

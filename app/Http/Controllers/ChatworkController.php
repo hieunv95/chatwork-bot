@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\Handler;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Requests;
@@ -52,20 +53,16 @@ class ChatworkController extends Controller
      */
     public function handleWebhook(Request $request)
     {
-        try {
-            $this->request = $request;
-            $this->roomId = $this->getWebhookVal('room_id');
-            $this->chatworkRoom = new ChatworkRoom($this->roomId);
-            $this->chatworkApi = new ChatworkApi();
-            $eventType = $this->getWebhookVal('webhook_event_type');
+        $this->request = $request;
+        $this->roomId = $this->getWebhookVal('room_id');
+        $this->chatworkRoom = new ChatworkRoom($this->roomId);
+        $this->chatworkApi = new ChatworkApi();
+        $eventType = $this->getWebhookVal('webhook_event_type');
 
-            if ($eventType === 'mention_to_me') {
-                $this->replyToMentionMessage();
-            } elseif ($eventType === 'message_created' || $eventType === 'message_updated') {
-                $this->handleCreatedAndUpdatedMessageEvents();
-            }
-        } catch (\Exception $e) {
-            \Log::error($e);
+        if ($eventType === 'mention_to_me') {
+            $this->replyToMentionMessage();
+        } elseif ($eventType === 'message_created' || $eventType === 'message_updated') {
+            $this->handleCreatedAndUpdatedMessageEvents();
         }
     }
 
@@ -183,7 +180,7 @@ class ChatworkController extends Controller
         $initialOrder->previewOrders()->delete();
         $validOrders = $initialOrder
             ->registeredOrders()
-            ->select('account_id', DB::raw("SUM('ordered_quantity')"))
+            ->select('account_id', DB::raw('SUM(ordered_quantity)'))
             ->groupBy('account_id')
             ->havingRaw('SUM(ordered_quantity) > ?', [0])
             ->pluck('account_id')
@@ -486,6 +483,7 @@ class ChatworkController extends Controller
             } catch (\Exception $e) {
                 $deleteErrorCount++;
                 if ($deleteErrorCount === $messageIdsCount) {
+                    (new Handler())->report($e);
                     \Log::info($e->getMessage());
                     return 'Chắc có lỗi gì rồi, em không xóa được tin nhắn đâu :(';
                 }
@@ -539,6 +537,7 @@ class ChatworkController extends Controller
 
             return strpos($messageDetail['body'] ?? '', '[rp aid=' . $fromAccountID) !== false;
         } catch (\Exception $e) {
+            (new Handler())->report($e);
             return false;
         }
     }
@@ -562,6 +561,7 @@ class ChatworkController extends Controller
 
             return in_array($fromAccountID, explode(',', env('ADMIN_CHATWORK_ID', ''))) || $isAdminMember;
         } catch (\Exception $e) {
+            (new Handler())->report($e);
             return false;
         }
     }

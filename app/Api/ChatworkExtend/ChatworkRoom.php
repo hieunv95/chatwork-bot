@@ -2,6 +2,7 @@
 
 namespace App\Api\ChatworkExtend;
 
+use App\Exceptions\Handler;
 use App\Inspiring;
 use App\Models\Message;
 use wataridori\ChatworkSDK\ChatworkRoom as ChatworkRoomBase;
@@ -90,6 +91,7 @@ class ChatworkRoom extends ChatworkRoomBase
                 $messageQuery->delete();
             }
         } catch (\Exception $e) {
+            (new Handler())->report($e);
             \Log::error($e->getMessage());
         }
 

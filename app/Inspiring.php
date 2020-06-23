@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Api\OpenWeatherMap\OpenWeatherMap;
+use App\Exceptions\Handler;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Http\Response;
@@ -510,6 +511,7 @@ class Inspiring
                 return $quoteTitle . PHP_EOL . implode(' - ', [$quoteContent, $quoteAuthor]);
             }
         } catch (\Exception $e) {
+            (new Handler())->report($e);
             \Log::error($e);
         }
 

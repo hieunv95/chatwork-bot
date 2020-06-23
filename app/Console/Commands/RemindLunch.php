@@ -2,6 +2,7 @@
 
 namespace app\Console\Commands;
 
+use App\Exceptions\Handler;
 use App\Inspiring;
 use App\Models\Message;
 use Carbon\Carbon;
@@ -48,6 +49,7 @@ class RemindLunch extends Command
                     return;
             }
         } catch (\Exception $e) {
+            (new Handler())->report($e);
             $this->line('<info>[' . Carbon::now($tz)->format('Y-m-d H:i:s') . ']</info> Exception:' . PHP_EOL
                 . '<error>' . $e->getMessage() . '</error>' . PHP_EOL . $e->getTraceAsString());
         }
