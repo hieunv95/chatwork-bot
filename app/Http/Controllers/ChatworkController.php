@@ -310,7 +310,7 @@ class ChatworkController extends Controller
     {
         $validOrders = $initialOrder
             ->registeredOrders()
-            ->select('account_id', DB::raw("SUM('ordered_quantity')"))
+            ->select('account_id', DB::raw('SUM(ordered_quantity)'))
             ->groupBy('account_id')
             ->havingRaw('SUM(ordered_quantity) > ?', [0])
             ->pluck('account_id')
