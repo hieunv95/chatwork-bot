@@ -316,23 +316,25 @@ class ChatworkController extends Controller
             ->pluck('account_id')
             ->toArray();
         $registeredOrders = collect()->wrap($registeredOrders);
-        $memberList = $registeredOrders->map(function ($order) use ($validOrders) {
+        $orderedQuantityTotal = 0;
+        $memberList = $registeredOrders->map(function ($order) use ($validOrders, &$orderedQuantityTotal) {
             if (!in_array($order->account_id, $validOrders)) {
                 return false;
             }
+
+            $orderedQuantityTotal += $order->ordered_quantity;
 
             return '[rp aid=' . $order->account_id . ' to=' . $order->room_id . '-'
                 . $order->message_id . '] ' . $order->account_name
                 . ' : ' . $order->ordered_quantity;
         })->filter()->implode(PHP_EOL);
-        $orderedQuantityTotal = $registeredOrders->sum('ordered_quantity');
 
         return implode(PHP_EOL, [
-            "[info][title]Chốt đơn hàng[/title]- Người tạo đơn hàng: [piconname:{$initialOrder->account_id}]",
-            "- Link đặt hàng: https://www.chatwork.com/#!rid{$initialOrder->room_id}-{$initialOrder->message_id}",
-            '- Danh sách người đặt:',
+            "[info][title]Chốt đơn hàng[/title](*) Người tạo đơn hàng: [piconname:{$initialOrder->account_id}]",
+            "(*) Link đặt hàng: https://www.chatwork.com/#!rid{$initialOrder->room_id}-{$initialOrder->message_id}",
+            '(*) Danh sách đặt:',
             $memberList,
-            "[hr]Tổng số lượng đặt : {$orderedQuantityTotal}",
+            "[hr](handshake) Tổng số lượng đặt : {$orderedQuantityTotal}",
             '[/info]',
         ]);
     }
@@ -341,18 +343,18 @@ class ChatworkController extends Controller
     {
         $registeredOrders = collect()->wrap($registeredOrders);
         $memberList = $registeredOrders->map(function ($order) {
-            return $order->account_name . ' : ' . $order->ordered_quantity;
+            return '* ' . $order->account_name . ' : ' . $order->ordered_quantity;
         })->implode(PHP_EOL);
         $orderedQuantityTotal = $registeredOrders->sum('ordered_quantity');
 
         return implode(PHP_EOL, [
-            "[info][title]Xem trước đơn hàng[/title]- Người tạo đơn hàng: {$initialOrder->account_name}",
-            "- Link đặt hàng: https://www.chatwork.com/#!rid{$initialOrder->room_id}-{$initialOrder->message_id}",
-            '- Danh sách người đặt:',
+            "[info][title]Xem trước đơn hàng[/title](*) Người tạo đơn hàng: {$initialOrder->account_name}",
+            "(*) Link đặt hàng: https://www.chatwork.com/#!rid{$initialOrder->room_id}-{$initialOrder->message_id}",
+            '(*) Danh sách đặt:',
             $memberList,
-            "[hr]Tổng số lượng đặt : {$orderedQuantityTotal}",
-            '[code]Hướng dẫn: Người tạo đơn hàng trả lời "chốt" (hoặc "chot") vào tin nhắn này để hoàn tất đơn hàng ạ'
-            . '(bow)[/code]',
+            "[hr](*) Tổng số lượng đặt : {$orderedQuantityTotal}",
+            '[info](lightbulb) Người tạo đơn hàng trả lời "chốt" (hoặc "chot") vào tin nhắn này để hoàn tất đơn hàng ạ.'
+            . ';)[/info]',
             '[/info]',
         ]);
     }
