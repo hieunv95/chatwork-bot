@@ -119,6 +119,7 @@ class ChatworkController extends Controller
                 preg_match_all('/(?<=|^)[-+]\d+(?=|$)/', $mainContent, $quantityMatches);
                 $doesContainValidOrderQuantity = is_numeric(trim($quantityMatches[0][0] ?? false));
                 $initialOrder = $orderModel
+                    ->withTrashed()
                     ->where(['message_id' => $repliedMessageId, 'type' => Order::INIT_TYPE])
                     ->first();
 
@@ -128,10 +129,12 @@ class ChatworkController extends Controller
                         ->where('message_id', $repliedMessageId)
                         ->whereIn('type', [Order::PREVIEW_TYPE, Order::CONFIRMED_TYPE])
                         ->first();
-                    $initialOrder = $order->parentOrder ?? null;
+                    $initialOrder = $order->parentOrder()->withTrashed()->first() ?? null;
                 }
 
-                if ($doesContainValidOrderQuantity && $initialOrder) {
+                if ($initialOrder && $initialOrder->deleted_at) {
+                    $this->sendOutdatedOrderWarning();
+                } elseif ($doesContainValidOrderQuantity && $initialOrder) {
                     $this->trackRegisteredOrder($initialOrder, $quantityMatches);
                 } elseif (!$doesContainValidOrderQuantity && $initialOrder
                     && $orderModel->where('message_id', $this->getWebhookVal('message_id'))->delete()) {
@@ -141,6 +144,17 @@ class ChatworkController extends Controller
                 }
             }
         }
+    }
+
+    private function sendOutdatedOrderWarning()
+    {
+        $roomId = $this->getWebhookVal('room_id');
+        $accountId = $this->getWebhookVal('account_id');
+        $messageId = $this->getWebhookVal('message_id');
+        $this->chatworkRoom->sendMessage(
+            "[rp aid={$accountId} to={$roomId}-{$messageId}]"
+            . PHP_EOL . 'Đơn đã hết hạn hoặc không tồn tại (shake)'
+        );
     }
 
     private function trackToAllInitialOrder()
@@ -328,9 +342,11 @@ class ChatworkController extends Controller
                 . $order->message_id . '] ' . $order->account_name
                 . ' : ' . $order->ordered_quantity;
         })->filter()->implode(PHP_EOL);
+        $orderTime = $initialOrder->created_at->format('d/m/Y');
 
         return implode(PHP_EOL, [
-            "[info][title]Chốt đơn hàng[/title](*) Người tạo đơn hàng: [piconname:{$initialOrder->account_id}]",
+            "[info][title]Chốt đơn hàng ($orderTime)[/title]" .
+            "(*) Người tạo đơn hàng: [piconname:{$initialOrder->account_id}]",
             "(*) Link đặt hàng: https://www.chatwork.com/#!rid{$initialOrder->room_id}-{$initialOrder->message_id}",
             '(*) Danh sách đặt:',
             $memberList,
@@ -346,9 +362,11 @@ class ChatworkController extends Controller
             return '* ' . $order->account_name . ' : ' . $order->ordered_quantity;
         })->implode(PHP_EOL);
         $orderedQuantityTotal = $registeredOrders->sum('ordered_quantity');
+        $orderTime = $initialOrder->created_at->format('d/m/Y');
 
         return implode(PHP_EOL, [
-            "[info][title]Xem trước đơn hàng[/title](*) Người tạo đơn hàng: {$initialOrder->account_name}",
+            "[info][title]Xem trước đơn hàng ($orderTime)[/title]" .
+            "(*) Người tạo đơn hàng: {$initialOrder->account_name}",
             "(*) Link đặt hàng: https://www.chatwork.com/#!rid{$initialOrder->room_id}-{$initialOrder->message_id}",
             '(*) Danh sách đặt:',
             $memberList,

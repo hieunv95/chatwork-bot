@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
         Commands\RemindUnipos::class,
         Commands\RemindCheckout::class,
         Commands\SchedulerDaemon::class,
+        Commands\DeleteOutdatedOrders::class,
     ];
 
     /**
