@@ -129,7 +129,7 @@ class ChatworkController extends Controller
                         ->where('message_id', $repliedMessageId)
                         ->whereIn('type', [Order::PREVIEW_TYPE, Order::CONFIRMED_TYPE])
                         ->first();
-                    $initialOrder = $order->parentOrder()->withTrashed()->first() ?? null;
+                    $initialOrder = $order ? ($order->parentOrder()->withTrashed()->first() ?? null) : null;
                 }
 
                 if ($initialOrder && $initialOrder->deleted_at) {
