@@ -110,14 +110,10 @@ class ChatworkController extends Controller
             && preg_match(self::ORDER_REGEX_PATTERN, $lowerMessageBody) === 1) {
             $this->trackToAllInitialOrder();
         } elseif (!$this->deleteChangedOrderMessages()) {
-            preg_match_all('/\[rp aid=.*to=.*-(.*?)]/m', $messageBody, $repliedMessageIdMatches);
-            $repliedMessageId = $repliedMessageIdMatches[1][0] ?? null;
+            preg_match('/\[rp aid=.*to=.*-(.*?)]/m', $messageBody, $repliedMessageIdMatches);
+            $repliedMessageId = $repliedMessageIdMatches[1] ?? null;
 
             if ($repliedMessageId && !$this->isDeletedMessage($repliedMessageId)) {
-                $mainContent = preg_replace('/\[.*?]/', '', $messageBody);
-                $mainContent = trim(preg_replace('/\s+/', '', $mainContent));
-                preg_match_all('/(?<=|^)[-+]\d+(?=|$)/', $mainContent, $quantityMatches);
-                $doesContainValidOrderQuantity = is_numeric(trim($quantityMatches[0][0] ?? false));
                 $initialOrder = $orderModel
                     ->withTrashed()
                     ->where(['message_id' => $repliedMessageId, 'type' => Order::INIT_TYPE])
@@ -131,6 +127,13 @@ class ChatworkController extends Controller
                         ->first();
                     $initialOrder = $order ? ($order->parentOrder()->withTrashed()->first() ?? null) : null;
                 }
+
+                $orderOwerName = $initialOrder->account_name ?? '';
+                $mainContent = preg_replace('/\[.*?]/', '', $messageBody);
+                $mainContent = str_replace($orderOwerName, '', $mainContent);
+                $mainContent = trim(preg_replace('/\s+/', '', $mainContent));
+                preg_match_all('/(?<=|^)[-+]\d+(?=|$)/', $mainContent, $quantityMatches);
+                $doesContainValidOrderQuantity = is_numeric(trim($quantityMatches[0][0] ?? false));
 
                 if ($initialOrder && $initialOrder->deleted_at) {
                     $this->sendOutdatedOrderWarning();
@@ -221,12 +224,15 @@ class ChatworkController extends Controller
             })
             ->filter();
         $previewContent = $this->buildPreviewOrderMessage($initialOrder, $registeredOrders);
-        $previewOrderMessage = $this->chatworkRoom->sendMessage($previewContent);
-        $orderModel->create([
-            'message_id' => data_get($previewOrderMessage, 'message_id'),
-            'type' => Order::PREVIEW_TYPE,
-            'parent_order_id' => $initialOrder->getKey(),
-        ]);
+
+        if ($previewContent) {
+            $previewOrderMessage = $this->chatworkRoom->sendMessage($previewContent);
+            $orderModel->create([
+                'message_id' => data_get($previewOrderMessage, 'message_id'),
+                'type' => Order::PREVIEW_TYPE,
+                'parent_order_id' => $initialOrder->getKey(),
+            ]);
+        }
 
         $accountId = $this->getWebhookVal('account_id');
         $messageId = $this->getWebhookVal('message_id');
@@ -362,6 +368,11 @@ class ChatworkController extends Controller
             return '* ' . $order->account_name . ' : ' . $order->ordered_quantity;
         })->implode(PHP_EOL);
         $orderedQuantityTotal = $registeredOrders->sum('ordered_quantity');
+
+        if ($orderedQuantityTotal < 1) {
+            return false;
+        }
+
         $orderTime = $initialOrder->created_at->format('d/m/Y');
 
         return implode(PHP_EOL, [
