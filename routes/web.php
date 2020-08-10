@@ -17,10 +17,12 @@ $router->get('/', function () use ($router) {
 
 $router->post('/chatwork-hook/account-event', [
     'uses' => 'ChatworkController@handleWebhook',
-    'middleware' => 'verifyChatworkWebhookSignature:account_event',
+    // TODO: verify multiple rooms
+    //'middleware' => 'verifyChatworkWebhookSignature:account_event',
 ]);
 
 $router->post('/chatwork-hook/room-event', [
     'uses' => 'ChatworkController@handleWebhook',
-    'middleware' => 'verifyChatworkWebhookSignature:room_event',
+    // TODO: verify multiple rooms
+    //'middleware' => 'verifyChatworkWebhookSignature:room_event',
 ]);
