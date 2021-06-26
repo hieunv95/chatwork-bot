@@ -415,6 +415,15 @@ class ChatworkController extends Controller
         $mainMentionContent = preg_replace('/\s+/', ' ', $mainMentionContent);
         $mainMentionContent = preg_replace('/' . $originalBotName . '/i', ' ', $mainMentionContent);
         $mainMentionContent = trim($mainMentionContent);
+        preg_match('/\[rp aid=.*to=.*-(.*?)]/m', $messageBody, $repliedMessageIdMatches);
+        $repliedMessageId = $repliedMessageIdMatches[1] ?? null;
+        $lowerMessageBody = mb_strtolower($messageBody);
+        preg_match_all('/(?<=|^)[-+]\d+(?=|$)/', $mainMentionContent, $quantityMatches);
+        $doesContainValidOrderQuantity = is_numeric(trim($quantityMatches[0][0] ?? false));
+        $isNotOrderMessage = preg_match(self::TO_ALL_REGEX_PATTERN, $messageBody) !== 1
+            && preg_match(self::ORDER_REGEX_PATTERN, $lowerMessageBody) !== 1
+            && preg_match(self::CONFIRMED_REGEX_PATTERN, $lowerMessageBody) !== 1
+            && !$doesContainValidOrderQuantity;
 
         switch (true) {
             case $mainMentionContent === '':
@@ -424,10 +433,10 @@ class ChatworkController extends Controller
             case strtolower($mainMentionContent) === 'del-msg':
                 $mainAnswerContent = $this->deleteAnsweredMessages();
                 break;
+            case $isNotOrderMessage || Order::withTrashed()->where('message_id', $repliedMessageId)->doesntExist():
+                $mainAnswerContent = $this->getAnswerFromSimi($mainMentionContent, $botName);
+                break;
             default:
-                // Temporary disable Simsimi API.
-                // $mainAnswerContent = $this->getAnswerFromSimi($mainMentionContent, $botName);
-                // break;
                 return false;
         }
 
@@ -463,27 +472,26 @@ class ChatworkController extends Controller
         $answerText = '';
         $headers = [
             'Content-Type' => 'application/json',
-            'x-api-key' => env('SIMSIMI_API_KEY'),
+            //'x-api-key' => env('SIMSIMI_API_KEY'),
         ];
-        $data = '{
+        /*$data = '{
             "utext": "' . $utext . '", 
             "lang": "vn",
             "atext_bad_prob_max": 0.0
-        }';
+        }';*/
 
         try {
-            $response = Requests::post(
-                env('SIMSIMI_API_ENDPOINT', 'https://wsapi.simsimi.com/190410/talk'),
-                $headers,
-                $data
+            $response = Requests::get(
+                env('SIMSIMI_API_ENDPOINT', 'https://api.simsimi.net/v1') . '?lang=vi_VN&text=' . $utext,
+                $headers
             );
-            $answerText = data_get(json_decode($response->body, true), 'atext') ?? '';
-            $answerText = preg_replace('/simsimi|símimi|simimi|símini|simi|sisi|sim/i', $botName, $answerText);
+            $answerText = data_get(json_decode($response->body, true), 'success') ?? '';
+            $answerText = preg_replace('/simsimi|símimi|simimi|símini|simi|sisi|smsimi|sim/i', $botName, $answerText);
         } catch (\Exception $e) {
             \Log::info($e->getMessage());
         }
 
-        return in_array($answerText, ['', 'iy']) ? '(think)' : $answerText;
+        return in_array($answerText, ['', 'iy', 'ir']) ? '(think)' : $answerText;
     }
 
     /**
