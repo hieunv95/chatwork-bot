@@ -3,6 +3,7 @@
 namespace App\Api\ChatworkExtend;
 
 use wataridori\ChatworkSDK\ChatworkApi as ChatworkApiBase;
+use wataridori\ChatworkSDK\Exception\RequestFailException;
 
 class ChatworkApi extends ChatworkApiBase
 {
@@ -39,7 +40,15 @@ class ChatworkApi extends ChatworkApiBase
         $request->setMethod($method);
         $request->setParams($params);
 
-        $response = $request->send();
+        try {
+            $response = $request->send();
+        } catch (RequestFailException $e) {
+            if (str_contains($e->getMessage(), 'The message is not found')) {
+                return false;
+            }
+
+            throw $e;
+        }
 
         return $response['response'];
     }
