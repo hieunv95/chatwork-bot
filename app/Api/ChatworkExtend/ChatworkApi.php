@@ -31,4 +31,16 @@ class ChatworkApi extends ChatworkApiBase
             ChatworkRequest::REQUEST_METHOD_DELETE
         );
     }
+
+    protected function api($endPoint, $method = ChatworkRequest::REQUEST_METHOD_GET, $params = [])
+    {
+        $request = new ChatworkRequest(self::$apiKey);
+        $request->setEndPoint($endPoint);
+        $request->setMethod($method);
+        $request->setParams($params);
+
+        $response = $request->send();
+
+        return $response['response'];
+    }
 }
