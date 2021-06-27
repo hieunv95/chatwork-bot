@@ -57,7 +57,6 @@ class ChatworkRequest extends ChatworkRequestBase
         curl_close($curl);
         if ($info['http_code'] >= 400) {
             $error = $response['errors'];
-            \Log::error($error);
             throw new RequestFailException(json_encode($error));
         }
 
