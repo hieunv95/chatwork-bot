@@ -15,7 +15,8 @@
         "ext-json": "*",
         "cmfcmf/openweathermap-php-api": "2.3.0",
         "doctrine/dbal": "^2.10",
-        "ext-curl": "*"
+        "ext-curl": "*",
+        "guzzlehttp/guzzle": "^7.3"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
