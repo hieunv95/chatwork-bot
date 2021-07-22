@@ -496,6 +496,7 @@ class Inspiring
      */
     public static function quoteFromTheySaidSo()
     {
+        return '(lightbulb) Today\'s interesting quote:' . PHP_EOL . self::quote();
         try {
             $guzzleClient = new Client(['verify' => false, 'headers' => ['Content-Type' => 'application/json']]);
             $quoteCategory = collect(self::QUOTE_CATEGORIES)->flip()->random();
