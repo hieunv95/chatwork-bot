@@ -482,7 +482,7 @@ class ChatworkController extends Controller
 
         try {
             $response = Requests::get(
-                env('SIMSIMI_API_ENDPOINT', 'https://api.simsimi.net/v1') . '?lang=vi_VN&text=' . $utext,
+                env('SIMSIMI_API_ENDPOINT', 'https://api.simsimi.net/v2') . '?lc=vn&lang=vi_VN&text=' . $utext,
                 $headers
             );
             $answerText = data_get(json_decode($response->body, true), 'success') ?? '';
