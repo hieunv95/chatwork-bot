@@ -16,6 +16,7 @@
         "cmfcmf/openweathermap-php-api": "2.3.0",
         "doctrine/dbal": "^2.10",
         "ext-curl": "*",
+	"ext-pdo_sqlite": "*",
         "guzzlehttp/guzzle": "^7.3"
     },
     "require-dev": {
@@ -46,6 +47,9 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
-        "optimize-autoloader": true
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "kylekatarnls/update-helper": true
+        }
     }
 }
